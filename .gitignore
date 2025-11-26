@@ -1,0 +1,92 @@
+# --------------------------------------
+# Node & General
+# --------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# dotenv files
+.env
+.env.*
+!.env.example
+
+# --------------------------------------
+# TypeScript / tsup / build artifacts
+# --------------------------------------
+dist/
+tsconfig.tsbuildinfo
+*.tsbuildinfo
+
+# tsup cache
+.turbo/
+.cache/
+.esbuild/
+
+# --------------------------------------
+# Coverage (Vitest / Jest)
+# --------------------------------------
+coverage/
+.vitest/
+
+# --------------------------------------
+# Documentation / Typedoc
+docs/
+
+# --------------------------------------
+# Editor folders
+# --------------------------------------
+
+# VSCode
+.vscode/
+.history/
+
+# JetBrains (WebStorm, IntelliJ, etc.)
+.idea/
+
+# Sublime
+*.sublime-project
+*.sublime-workspace
+
+# --------------------------------------
+# System files
+# --------------------------------------
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Linux
+.Trash-*
+.nfs*
+
+# Windows (por si alguien colabora)
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# --------------------------------------
+# Git / Husky / Linting
+# --------------------------------------
+.husky/_ # auto-generated
+.git/hooks/*
+!/.husky/*
+
+# --------------------------------------
+# Temp files
+# --------------------------------------
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.swp
+
+# --------------------------------------
+# Local test linking (npm link / pnpm link)
+# --------------------------------------
+*.tgz
