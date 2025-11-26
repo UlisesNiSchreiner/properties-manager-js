@@ -55,7 +55,7 @@ console.log(sum(2, 3)); // -> 5
 When creating a new repository from this template, the default library name is:
 
 ```
-uns_properties-manager-js
+properties-manager-js
 ```
 
 You can automatically rename it by running:
