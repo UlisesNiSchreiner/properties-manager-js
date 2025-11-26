@@ -58,7 +58,6 @@ module.exports = [
     ],
   },
 },
-
   // ---------- Tests (Vitest) ----------
   {
     files: ["test/**/*.ts"],
