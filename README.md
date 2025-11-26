@@ -1,4 +1,4 @@
-# typescript-lib-template
+# properties-manager-js
 
 A Template for building **TypeScript libraries** :  
 ✔ ESM + CJS + type definitions  
@@ -9,10 +9,10 @@ A Template for building **TypeScript libraries** :
 ✔ Husky + lint-staged + commitlint  
 ✔ npm publishing
 
-![CI](https://img.shields.io/github/actions/workflow/status/UlisesNiSchreiner/typescript-lib-template/ci.yml?label=CI)
-![npm version](https://img.shields.io/npm/v/uns-typescript-lib-template)
-![npm downloads](https://img.shields.io/npm/dm/uns-typescript-lib-template)
-[![Coverage](https://codecov.io/gh/UlisesNiSchreiner/typescript-lib-template/branch/master/graph/badge.svg)](https://codecov.io/gh/UlisesNiSchreiner/typescript-lib-template)
+![CI](https://img.shields.io/github/actions/workflow/status/UlisesNiSchreiner/properties-manager-js/ci.yml?label=CI)
+![npm version](https://img.shields.io/npm/v/properties-manager-js)
+![npm downloads](https://img.shields.io/npm/dm/properties-manager-js)
+[![Coverage](https://codecov.io/gh/UlisesNiSchreiner/properties-manager-js/branch/master/graph/badge.svg)](https://codecov.io/gh/UlisesNiSchreiner/properties-manager-js)
 ![license](https://img.shields.io/badge/License-MIT-green)
 ![typescript](https://img.shields.io/badge/TypeScript-5.x-blue)
 
@@ -21,7 +21,7 @@ A Template for building **TypeScript libraries** :
 # 🚀 Installation
 
 ```bash
-npm i uns-typescript-lib-template
+npm i properties-manager-js
 ```
 
 ---
@@ -29,7 +29,7 @@ npm i uns-typescript-lib-template
 # 📦 Usage
 
 ```ts
-import { sum } from "uns-typescript-lib-template";
+import { sum } from "properties-manager-js";
 
 console.log(sum(2, 3)); // -> 5
 ```
@@ -55,7 +55,7 @@ console.log(sum(2, 3)); // -> 5
 When creating a new repository from this template, the default library name is:
 
 ```
-uns_typescript-lib-template
+uns_properties-manager-js
 ```
 
 You can automatically rename it by running:
