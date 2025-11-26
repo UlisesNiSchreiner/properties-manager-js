@@ -1,20 +1,16 @@
 # properties-manager-js
 
-A Template for building **TypeScript libraries** :  
-✔ ESM + CJS + type definitions  
-✔ Tests + Coverage (Vitest)  
-✔ CI/CD  
-✔ LibFlow (branching model for libraries)  
-✔ Manual versioning with standard-version  
-✔ Husky + lint-staged + commitlint  
-✔ npm publishing
+A professional, type-safe **configuration manager for Node + TypeScript**.
 
-![CI](https://img.shields.io/github/actions/workflow/status/UlisesNiSchreiner/properties-manager-js/ci.yml?label=CI)
-![npm version](https://img.shields.io/npm/v/properties-manager-js)
-![npm downloads](https://img.shields.io/npm/dm/properties-manager-js)
-[![Coverage](https://codecov.io/gh/UlisesNiSchreiner/properties-manager-js/branch/master/graph/badge.svg)](https://codecov.io/gh/UlisesNiSchreiner/properties-manager-js)
-![license](https://img.shields.io/badge/License-MIT-green)
-![typescript](https://img.shields.io/badge/TypeScript-5.x-blue)
+✔ Scoped environment files (`.env`, `.env.dev`, `.env.prod`, etc.)  
+✔ Strongly typed getters (`getString`, `getNumber`, `getBoolean`, `getJSON`)  
+✔ Config cascading & fallbacks  
+✔ In-memory caching + Singleton architecture  
+✔ ESM + CJS + Types  
+✔ Vitest + Coverage  
+✔ CI/CD + LibFlow + standard-version  
+✔ Husky + lint-staged + commitlint  
+✔ npm publishing ready
 
 ---
 
@@ -29,9 +25,15 @@ npm i properties-manager-js
 # 📦 Usage
 
 ```ts
-import { sum } from "properties-manager-js";
+import { ConfigManager } from "properties-manager-js";
 
-console.log(sum(2, 3)); // -> 5
+const config = ConfigManager.getInstance();
+
+config.load({ scope: "dev" });
+
+const port = config.getNumber("SERVER_PORT");
+const mode = config.getString("MODE");
+const flags = config.getBoolean("FEATURE_ENABLED");
 ```
 
 ---
@@ -40,112 +42,53 @@ console.log(sum(2, 3)); // -> 5
 
 ```
 .
-├── src/                 # Source code (TS)
-├── test/                # Tests (Vitest)
-├── dist/                # Final build (ESM, CJS, .d.ts)
-├── .husky/              # Git hooks (lint + commitlint)
-├── .github/workflows/   # CI/CD
+├── src/
+│   ├── loader/
+│   ├── parsers/
+│   ├── core/
+│   └── index.ts
+├── test/
+├── dist/
+├── .github/workflows/
+├── .husky/
 └── README.md
 ```
 
 ---
 
-# 🧩 Initializing a New Project from This Template
+# 🔧 Supported File Format
 
-When creating a new repository from this template, the default library name is:
+This library uses **`.env`-style files**, the most widely adopted configuration format in Node.js:
 
 ```
-properties-manager-js
+PORT=3000
+DB_HOST=localhost
+FEATURE_ENABLED=true
+ALLOWED=["a","b","c"]
 ```
-
-You can automatically rename it by running:
-
-```bash
-npm run init-template <your-library-name>
-```
-
-Example:
-
-```bash
-npm run init-template my-awesome-lib
-```
-
-This will:
-
-- Update `package.json` with the new package name
-- Update README installation/import examples
-- Update npm version/download badges
 
 ---
 
-# 🔀 LibFlow — Workflow for Libraries
+# 🔀 LibFlow — Workflow
 
-This project uses **LibFlow**, a GitFlow variant optimized specifically for library development.
+Same as your template:
 
-### 🌿 Main Branches
-
-- **master** → stable / production branch
-- **feature/\*** → new features and fixes
-- **release/x.y** → release preparation + RC
-- **hotfix/\*** → urgent patches on `master`
-
-### 🔄 Full Flow
-
-1. Create a feature branch:
-   ```bash
-   git checkout -b feature/my-feature
-   ```
-2. Open PR → merge into `master`
-3. Start a release:
-   ```bash
-   git checkout -b release/1.2
-   ```
-4. Publish RC:
-   ```bash
-   npm run release:rc
-   ```
-5. Validate RC
-6. Merge release → master
-7. Publish stable version:
-   ```bash
-   npm run release:patch   # or :minor / :major
-   ```
+- `master` → stable branch
+- `feature/*` → new features
+- `release/x.y` → RC & stabilization
+- `hotfix/*` → emergency fixes
 
 ---
 
-# 🏷 Versioning & Releases
+# 🧪 Typed API
 
-Powered by **standard-version**.
+### `getString(key: string): string`
 
-| Action            | Script                        |
-| ----------------- | ----------------------------- |
-| Patch release     | `npm run release:patch`       |
-| Minor release     | `npm run release:minor`       |
-| Major release     | `npm run release:major`       |
-| Release candidate | `npm run release:rc`          |
-| Finalize RC patch | `npm run release:final:patch` |
-| Finalize RC minor | `npm run release:final:minor` |
-| Finalize RC major | `npm run release:final:major` |
+### `getNumber(key: string): number`
 
-Each command updates:
+### `getBoolean(key: string): boolean`
 
-- `CHANGELOG.md`
-- package version
-- Git tag
-- npm publish (requires `NPM_TOKEN`)
-
----
-
-# 🧪 Main Scripts
-
-| Script                  | Description                    |
-| ----------------------- | ------------------------------ |
-| `npm run dev`           | Watch build (tsup)             |
-| `npm run build`         | Compile ESM + CJS + types      |
-| `npm run test`          | Run tests                      |
-| `npm run test:coverage` | Coverage with V8               |
-| `npm run typecheck`     | TS check without emitting      |
-| `npm run docs`          | Generate Typedoc documentation |
+### `getJSON<T>(key: string): T`
 
 ---
 
@@ -155,18 +98,7 @@ Each command updates:
 npm ci
 npm run build
 npm run test
-
-git add .
-git commit -m "feat: initial setup"
 ```
-
----
-
-# 📘 API
-
-### **`sum(a: number, b: number): number`**
-
-Adds two numbers and validates they are finite.
 
 ---
 
