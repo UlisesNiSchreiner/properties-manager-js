@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.1-rc.1](https://github.com/UlisesNiSchreiner/properties-manager-js/compare/v0.0.1-rc.0...v0.0.1-rc.1) (2025-11-29)
+
+### Features
+
+- release 0.0.1 - 01 ([817a32e](https://github.com/UlisesNiSchreiner/properties-manager-js/commit/817a32e669dbfb19b249e37d3f93c61b8cf5000f))
+- release 0.0.1 - 02 ([318a8a9](https://github.com/UlisesNiSchreiner/properties-manager-js/commit/318a8a96befc76ff439eebd726e5b3dc9c46f28e))
+
 ### 0.0.1-rc.0 (2025-11-26)
 
 ### Features
