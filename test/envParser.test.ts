@@ -1,4 +1,3 @@
-// test/envParser.test.ts
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
@@ -7,14 +6,14 @@ import os from "node:os";
 import { parseEnvFile, buildEnvFilename, resolveEnvPath } from "../src/envParser";
 
 describe("envParser", () => {
-  it("returns empty object for non-existing file", () => {
-    const result = parseEnvFile("/path/that/does/not/exist/.env");
+  it("returns empty object when file does not exist", () => {
+    const result = parseEnvFile("/path/that/does/not/exist/config.dev");
     expect(result).toEqual({});
   });
 
-  it("parses basic .env content with comments and quotes", () => {
+  it("parses config file with comments, empty lines and quotes", () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "envparser-"));
-    const envPath = path.join(tmpDir, ".env.test");
+    const filePath = path.join(tmpDir, "config.dev");
 
     const content = `
 # comment
@@ -26,37 +25,36 @@ EMPTY=
 NO_EQUALS
 `;
 
-    fs.writeFileSync(envPath, content, "utf8");
+    fs.writeFileSync(filePath, content, "utf8");
 
-    const result = parseEnvFile(envPath);
+    const result = parseEnvFile(filePath);
 
     expect(result.FOO).toBe("bar");
     expect(result.SPACED).toBe("value with spaces");
     expect(result.QUOTED).toBe("quoted value");
     expect(result.SINGLE).toBe("single quoted");
-    // Línea sin "=" debe ser ignorada
-    expect(result).not.toHaveProperty("NO_EQUALS");
-    // Clave con valor vacío -> string vacío
     expect(result.EMPTY).toBe("");
+    expect(result).not.toHaveProperty("NO_EQUALS");
   });
 
   it("buildEnvFilename builds correct filenames", () => {
-    expect(buildEnvFilename()).toBe(".env");
-    expect(buildEnvFilename("dev")).toBe(".env.dev");
-    expect(buildEnvFilename("prod")).toBe(".env.prod");
+    expect(buildEnvFilename()).toBe("config.dev");
+    expect(buildEnvFilename("qa")).toBe("config.qa");
+    expect(buildEnvFilename("prod")).toBe("config.prod");
   });
 
   it("buildEnvFilename throws on invalid scope", () => {
     expect(() => buildEnvFilename("../evil")).toThrow(Error);
     expect(() => buildEnvFilename("dev/../prod")).toThrow(Error);
+    expect(() => buildEnvFilename("dev;rm -rf")).toThrow(Error);
   });
 
-  it("resolveEnvPath joins configDir with env filename", () => {
-    const configDir = "/my/config";
+  it("resolveEnvPath returns a path inside configDir", () => {
+    const configDir = "/my/app/config";
     const p1 = resolveEnvPath(configDir, undefined);
-    const p2 = resolveEnvPath(configDir, "dev");
+    const p2 = resolveEnvPath(configDir, "qa");
 
-    expect(p1.endsWith(path.join("my", "config", ".env"))).toBe(true);
-    expect(p2.endsWith(path.join("my", "config", ".env.dev"))).toBe(true);
+    expect(p1.endsWith(path.join("my", "app", "config", "config.dev"))).toBe(true);
+    expect(p2.endsWith(path.join("my", "app", "config", "config.qa"))).toBe(true);
   });
 });

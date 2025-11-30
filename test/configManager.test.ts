@@ -1,156 +1,227 @@
-// test/configManager.test.ts
-import { describe, it, expect, beforeAll, beforeEach } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 
 import { ConfigManager } from "../src/configManager";
 
-let tmpDir: string;
-let config: ConfigManager;
+let tmpRootDir: string;
+let configDir: string;
+let manager: ConfigManager;
+
+const ORIGINAL_ENV = { ...process.env };
 
 describe("ConfigManager", () => {
   beforeAll(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "config-manager-"));
+    // Creamos un directorio temporal con subcarpeta config/
+    tmpRootDir = fs.mkdtempSync(path.join(os.tmpdir(), "config-manager-"));
+    configDir = path.join(tmpRootDir, "config");
+    fs.mkdirSync(configDir, { recursive: true });
 
-    // .env root
+    // config.dev (scope por defecto)
     fs.writeFileSync(
-      path.join(tmpDir, ".env"),
+      path.join(configDir, "config.dev"),
       [
-        "APP_NAME=MyApp",
+        "APP_NAME=MyDevApp",
         "PORT=3000",
-        "FEATURE_ROOT=true",
+        "FEATURE_DEV=true",
         "INVALID_NUMBER=not-a-number",
         "INVALID_BOOL=maybe",
-        'APP_CONFIG={"root":true,"env":"root"}',
+        'APP_CONFIG={"env":"dev","debug":true}',
       ].join("\n"),
       "utf8",
     );
 
-    // .env.dev
+    // config.qa
     fs.writeFileSync(
-      path.join(tmpDir, ".env.dev"),
-      ["PORT=4000", "FEATURE_DEV=true", 'APP_CONFIG={"root":false,"env":"dev"}'].join("\n"),
+      path.join(configDir, "config.qa"),
+      ["PORT=4000", "FEATURE_QA=true", 'APP_CONFIG={"env":"qa","debug":false}'].join("\n"),
       "utf8",
     );
 
-    // .env.prod
+    // config.prod
     fs.writeFileSync(
-      path.join(tmpDir, ".env.prod"),
-      ["PORT=5000", "FEATURE_DEV=false"].join("\n"),
+      path.join(configDir, "config.prod"),
+      ["PORT=5000", "FEATURE_QA=false"].join("\n"),
       "utf8",
     );
 
-    // Inicializamos el singleton UNA sola vez
+    // Inicializamos el singleton con nuestro configDir
     ConfigManager.initialize({
-      configDir: tmpDir,
+      configDir,
       defaultScope: "dev",
       envPrefix: "PM_",
+      scopeEnvVarName: "SCOPE",
       strict: true,
     });
 
-    config = ConfigManager.getInstance();
+    manager = ConfigManager.getInstance();
   });
 
   beforeEach(() => {
-    // Limpiamos cache interno (por las pruebas que modifican archivos o env)
-    config.clearCache();
+    // Limpia cache entre tests
+    manager.clearCache();
 
-    // Limpiamos posibles overrides en process.env
+    // Resetea override de scope
+    manager.load(undefined);
+
+    // Reset env
+    process.env = { ...ORIGINAL_ENV };
+    delete process.env.SCOPE;
     delete process.env.PORT;
     delete process.env.PM_PORT;
   });
 
-  it("returns string values from .env root", () => {
-    const appName = config.getString("APP_NAME");
-    expect(appName).toBe("MyApp");
+  afterAll(() => {
+    // Restaurar env original
+    process.env = ORIGINAL_ENV;
   });
 
-  it("uses defaultScope for values when scope is not specified", () => {
-    // defaultScope = "dev", y en .env.dev PORT=4000
-    const port = config.getNumber("PORT");
+  it("uses defaultScope ('dev') when no SCOPE env and no load or explicit scope", () => {
+    const port = manager.getNumber("PORT");
+    expect(port).toBe(3000);
+
+    const name = manager.getString("APP_NAME");
+    expect(name).toBe("MyDevApp");
+  });
+
+  it("uses SCOPE env to resolve config.<scope>", () => {
+    process.env.SCOPE = "qa";
+    const port = manager.getNumber("PORT");
+    expect(port).toBe(4000);
+
+    const qaFlag = manager.getBoolean("FEATURE_QA", { default: false });
+    expect(qaFlag).toBe(true);
+  });
+
+  it("load(scope) overrides SCOPE env and defaultScope", () => {
+    process.env.SCOPE = "qa";
+    manager.load("prod");
+
+    const port = manager.getNumber("PORT");
+    expect(port).toBe(5000);
+
+    // FEATURE_QA en prod es false
+    const qaFlag = manager.getBoolean("FEATURE_QA", { default: true });
+    expect(qaFlag).toBe(false);
+  });
+
+  it("load() without args clears override and goes back to env/default resolution", () => {
+    process.env.SCOPE = "qa";
+    manager.load("prod");
+
+    expect(manager.getNumber("PORT")).toBe(5000);
+
+    // limpiar override
+    manager.load();
+
+    // ahora vuelve a usar SCOPE=qa → 4000
+    const port = manager.getNumber("PORT");
     expect(port).toBe(4000);
   });
 
-  it("falls back to root .env when key is not present in scoped files", () => {
-    // FEATURE_ROOT sólo existe en .env root
-    const flag = config.getBoolean("FEATURE_ROOT");
-    expect(flag).toBe(true);
+  it("explicit options.scope overrides everything else per call", () => {
+    process.env.SCOPE = "qa";
+    manager.load("prod");
+
+    // Usa dev aunque SCOPE=qa y override=prod
+    const portDev = manager.getNumber("PORT", { scope: "dev" });
+    expect(portDev).toBe(3000);
   });
 
-  it("can read from a specific scope", () => {
-    const portProd = config.getNumber("PORT", { scope: "prod" });
-    expect(portProd).toBe(5000);
-  });
+  it("uses envPrefix first, then process.env without prefix, then config files", () => {
+    process.env.SCOPE = "dev";
+    process.env.PM_PORT = "9000";
+    process.env.PORT = "8000";
 
-  it("uses process.env without prefix before files", () => {
-    process.env.PORT = "9000";
-    const port = config.getNumber("PORT");
+    const port = manager.getNumber("PORT");
     expect(port).toBe(9000);
   });
 
-  it("uses process.env with prefix before unprefixed env", () => {
-    process.env.PORT = "9000";
-    process.env.PM_PORT = "7000"; // envPrefix = "PM_"
-    const port = config.getNumber("PORT");
+  it("uses process.env without prefix before config files when no prefixed var", () => {
+    process.env.SCOPE = "dev";
+    delete process.env.PM_PORT;
+    process.env.PORT = "7000";
+
+    const port = manager.getNumber("PORT");
     expect(port).toBe(7000);
   });
 
-  it("returns default for missing keys when default is provided", () => {
-    const val = config.getString("NON_EXISTENT_KEY", {
+  it("getBoolean parses boolean values correctly", () => {
+    process.env.SCOPE = "dev";
+
+    const featureDev = manager.getBoolean("FEATURE_DEV");
+    expect(featureDev).toBe(true);
+
+    // override via env
+    process.env.FEATURE_DEV = "false";
+    const featureDevEnv = manager.getBoolean("FEATURE_DEV");
+    expect(featureDevEnv).toBe(false);
+  });
+
+  it("getJson parses JSON from config for current scope", () => {
+    process.env.SCOPE = "qa";
+
+    type AppConfig = { env: string; debug: boolean };
+
+    const cfg = manager.getJson<AppConfig>("APP_CONFIG");
+    expect(cfg).toEqual({ env: "qa", debug: false });
+  });
+
+  it("returns default when key is missing and default is provided", () => {
+    const val = manager.getString("NON_EXISTENT_KEY", {
       default: "fallback",
     });
     expect(val).toBe("fallback");
   });
 
-  it("throws on missing keys when strict is true and no default is provided", () => {
-    expect(() => config.getString("NON_EXISTENT_KEY")).toThrow(/not found/);
+  it("throws when key is missing, strict=true and no default is provided", () => {
+    expect(() => manager.getString("NON_EXISTENT_KEY")).toThrow(/not found/);
   });
 
   it("throws TypeError for invalid number when no default is provided", () => {
-    expect(() => config.getNumber("INVALID_NUMBER")).toThrow(TypeError);
+    process.env.SCOPE = "dev"; // INVALID_NUMBER definido en config.dev
+    expect(() => manager.getNumber("INVALID_NUMBER")).toThrow(TypeError);
   });
 
   it("returns default when number is invalid but default is provided", () => {
-    const n = config.getNumber("INVALID_NUMBER", { default: 42 });
+    process.env.SCOPE = "dev";
+    const n = manager.getNumber("INVALID_NUMBER", { default: 42 });
     expect(n).toBe(42);
   });
 
   it("throws TypeError for invalid boolean when no default is provided", () => {
-    expect(() => config.getBoolean("INVALID_BOOL")).toThrow(TypeError);
+    process.env.SCOPE = "dev";
+    expect(() => manager.getBoolean("INVALID_BOOL")).toThrow(TypeError);
   });
 
   it("returns default when boolean is invalid but default is provided", () => {
-    const b = config.getBoolean("INVALID_BOOL", { default: false });
+    process.env.SCOPE = "dev";
+    const b = manager.getBoolean("INVALID_BOOL", { default: false });
     expect(b).toBe(false);
   });
 
-  it("parses JSON correctly with getJson", () => {
-    const cfg = config.getJson<{ root: boolean; env: string }>("APP_CONFIG");
-    expect(cfg).toEqual({ root: false, env: "dev" }); // viene de .env.dev
-  });
-
   it("returns default when JSON is invalid and default is provided", () => {
-    // modificamos temporalmente el archivo para meter un JSON inválido
-    const envDevPath = path.join(tmpDir, ".env.dev");
-    const original = fs.readFileSync(envDevPath, "utf8");
+    // Hacemos el JSON inválido en config.qa
+    const qaPath = path.join(configDir, "config.qa");
+    const original = fs.readFileSync(qaPath, "utf8");
 
     try {
-      fs.writeFileSync(
-        envDevPath,
-        original.replace('APP_CONFIG={"root":false,"env":"dev"}', "APP_CONFIG=invalid-json"),
-        "utf8",
+      const mutated = original.replace(
+        'APP_CONFIG={"env":"qa","debug":false}',
+        "APP_CONFIG=invalid-json",
       );
+      fs.writeFileSync(qaPath, mutated, "utf8");
 
-      config.clearCache();
+      manager.clearCache();
+      process.env.SCOPE = "qa";
 
-      const fallback = { root: true, env: "fallback" as const };
-      const cfg = config.getJson("APP_CONFIG", { default: fallback });
+      const fallback = { env: "fallback", debug: false as const };
+      const cfg = manager.getJson("APP_CONFIG", { default: fallback });
       expect(cfg).toEqual(fallback);
     } finally {
-      // Restauramos el archivo
-      fs.writeFileSync(envDevPath, original, "utf8");
-      config.clearCache();
+      fs.writeFileSync(qaPath, original, "utf8");
+      manager.clearCache();
     }
   });
 });

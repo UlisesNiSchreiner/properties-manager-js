@@ -1,5 +1,3 @@
-// src/envParser.ts
-
 import * as fs from "node:fs";
 import * as path from "node:path";
 
@@ -42,23 +40,27 @@ export function parseEnvFile(filePath: string): Record<string, string> {
 }
 
 /**
- * Build .env filename for a given scope:
- *  - undefined → ".env"
- *  - "dev"     → ".env.dev"
+ * Build config filename for a given scope:
+ *  - undefined → "config.dev"
+ *  - "qa"      → "config.qa"
  */
 export function buildEnvFilename(scope?: string): string {
-  if (!scope) return ".env";
+  const effectiveScope = scope ?? "dev";
 
   // Basic sanitization, avoid path traversal and weird chars
-  if (!/^[a-zA-Z0-9._-]+$/.test(scope)) {
-    throw new Error(`Invalid scope name: "${scope}"`);
+  if (!/^[a-zA-Z0-9._-]+$/.test(effectiveScope)) {
+    throw new Error(`Invalid scope name: "${effectiveScope}"`);
   }
 
-  return `.env.${scope}`;
+  return `config.${effectiveScope}`;
 }
 
 /**
- * Resolve absolute path to .env file for a given scope.
+ * Resolve absolute path to config file for a given scope.
+ *
+ * Example:
+ *  configDir = /app/config
+ *  scope = "qa" → /app/config/config.qa
  */
 export function resolveEnvPath(configDir: string, scope?: string): string {
   const filename = buildEnvFilename(scope);

@@ -1,7 +1,6 @@
-// src/configManager.ts
-
 import { parseEnvFile, resolveEnvPath } from "./envParser";
 import type { ConfigManagerOptions, GetOptions } from "./types";
+import * as path from "node:path";
 
 type ScopeName = string | undefined;
 type ScopeCache = Record<string, string>;
@@ -10,29 +9,45 @@ type ScopeCache = Record<string, string>;
  * ConfigManager
  *
  * - Singleton by default (ConfigManager.getInstance / config export)
- * - Scoped .env files ( .env, .env.dev, .env.prod, etc. )
- * - Cascading resolution:
+ * - Scoped config files: ./config/config.<scope>
+ * - Scope resolution:
+ *    1. options.scope (per call)
+ *    2. override set via config.load(scope)
+ *    3. process.env[scopeEnvVarName]  (default: SCOPE)
+ *    4. defaultScope (default: "dev")
+ *
+ * - Value resolution order (once scope is resolved):
  *    1. process.env with prefix (if configured)
  *    2. process.env without prefix
- *    3. scoped file (.env.<scope>)
- *    4. defaultScope file (.env.<defaultScope>)
- *    5. root file (.env)
+ *    3. config file for resolved scope
+ *    4. defaultScope file (if different)
+ *    5. (no root file; everything vive en ./config/config.*)
  */
 export class ConfigManager {
   private static instance: ConfigManager | null = null;
 
   private readonly configDir: string;
-  private readonly defaultScope?: string;
+  private readonly defaultScope: string;
   private readonly envPrefix?: string;
   private readonly strict: boolean;
+  private readonly scopeEnvVarName: string;
+
+  /**
+   * Scope override set via config.load(scope).
+   * If undefined, scope is resolved from env var / defaultScope.
+   */
+  private overrideScope?: string;
 
   private readonly cache = new Map<ScopeName, ScopeCache>();
 
   private constructor(options: ConfigManagerOptions = {}) {
-    this.configDir = options.configDir ?? process.cwd();
-    this.defaultScope = options.defaultScope;
+    // Por defecto, usamos ./config como directorio raíz
+    this.configDir = options.configDir ?? path.resolve(process.cwd(), "config");
+    this.defaultScope = options.defaultScope ?? "dev";
     this.envPrefix = options.envPrefix;
     this.strict = options.strict ?? true;
+    // Por defecto, buscamos SCOPE como variable de entorno
+    this.scopeEnvVarName = options.scopeEnvVarName ?? "SCOPE";
   }
 
   /**
@@ -63,6 +78,18 @@ export class ConfigManager {
     this.cache.clear();
   }
 
+  /**
+   * Set or clear the current override scope.
+   *
+   * If you call:
+   *   config.load("qa")  → uses ./config/config.qa by default
+   *   config.load()      → back to env/default-based resolution
+   */
+  load(scope?: string): void {
+    this.overrideScope = scope;
+    this.clearCache();
+  }
+
   // ---------- INTERNAL RESOLUTION ----------
 
   private ensureScopeLoaded(scope?: string): ScopeCache {
@@ -74,6 +101,33 @@ export class ConfigManager {
     const parsed = parseEnvFile(envPath);
     this.cache.set(scope, parsed);
     return parsed;
+  }
+
+  /**
+   * Resolve the effective scope for a given call.
+   *
+   * Priority:
+   *  1. explicitScope (options.scope)
+   *  2. overrideScope set by load()
+   *  3. process.env[scopeEnvVarName]  (e.g. SCOPE)
+   *  4. defaultScope (e.g. "dev")
+   */
+  private resolveScope(explicitScope?: string): string {
+    if (explicitScope !== undefined) {
+      return explicitScope;
+    }
+
+    if (this.overrideScope !== undefined) {
+      return this.overrideScope;
+    }
+
+    const envScope = this.scopeEnvVarName ? process.env[this.scopeEnvVarName] : undefined;
+
+    if (envScope && envScope.length > 0) {
+      return envScope;
+    }
+
+    return this.defaultScope;
   }
 
   /**
@@ -91,21 +145,20 @@ export class ConfigManager {
       return process.env[key];
     }
 
-    // 3. scope
+    // 3. current scope file
     if (scope !== undefined) {
       const scoped = this.ensureScopeLoaded(scope);
       if (scoped[key] !== undefined) return scoped[key];
     }
 
-    // 4. default scope
-    if (this.defaultScope) {
+    // 4. fallback to defaultScope file (if different)
+    if (this.defaultScope && this.defaultScope !== scope) {
       const def = this.ensureScopeLoaded(this.defaultScope);
       if (def[key] !== undefined) return def[key];
     }
 
-    // 5. root .env
-    const root = this.ensureScopeLoaded(undefined);
-    return root[key];
+    // 5. no root file; si no está, devolvemos undefined
+    return undefined;
   }
 
   private handleMissing<T>(key: string, scope: string | undefined, options: GetOptions<T>): T {
@@ -113,7 +166,7 @@ export class ConfigManager {
       return options.default as T;
     }
     if (this.strict) {
-      throw new Error(`Config key "${key}" not found (scope="${scope ?? "root"}")`);
+      throw new Error(`Config key "${key}" not found (scope="${scope ?? "unknown"}")`);
     }
     return undefined as unknown as T;
   }
@@ -124,7 +177,7 @@ export class ConfigManager {
    * Get configuration as string.
    */
   getString(key: string, options: GetOptions<string> = {}): string {
-    const scope = options.scope ?? this.defaultScope;
+    const scope = this.resolveScope(options.scope);
     const raw = this.resolveRawValue(key, scope);
 
     if (raw === undefined || raw === null) {
@@ -138,7 +191,7 @@ export class ConfigManager {
    * Get configuration as number (finite).
    */
   getNumber(key: string, options: GetOptions<number> = {}): number {
-    const scope = options.scope ?? this.defaultScope;
+    const scope = this.resolveScope(options.scope);
     const raw = this.resolveRawValue(key, scope);
 
     if (raw === undefined || raw === null) {
@@ -162,7 +215,7 @@ export class ConfigManager {
    * Accepted falsy:   "false", "0", "no", "off"
    */
   getBoolean(key: string, options: GetOptions<boolean> = {}): boolean {
-    const scope = options.scope ?? this.defaultScope;
+    const scope = this.resolveScope(options.scope);
     const raw = this.resolveRawValue(key, scope);
 
     if (raw === undefined || raw === null) {
@@ -194,7 +247,7 @@ export class ConfigManager {
    *  const cfg = config.getJson<{ feature: boolean; retries: number }>("APP_CONFIG");
    */
   getJson<T = unknown>(key: string, options: GetOptions<T> = {}): T {
-    const scope = options.scope ?? this.defaultScope;
+    const scope = this.resolveScope(options.scope);
     const raw = this.resolveRawValue(key, scope);
 
     if (raw === undefined || raw === null) {

@@ -1,15 +1,16 @@
-// src/types.ts
-
 export interface ConfigManagerOptions {
   /**
-   * Base directory where .env files are located.
-   * Defaults to process.cwd().
+   * Base directory where config files are located.
+   * Defaults to "<process.cwd()>/config".
    */
   configDir?: string;
 
   /**
    * Default scope, e.g. "dev", "prod".
-   * Used when no scope is provided in the get*() calls.
+   * Used when no scope is resolved from:
+   *   1. override via load()
+   *   2. environment variable
+   * Defaults to "dev".
    */
   defaultScope?: string;
 
@@ -18,6 +19,16 @@ export interface ConfigManagerOptions {
    * Example: "MYAPP_" → will check "MYAPP_PORT" before "PORT".
    */
   envPrefix?: string;
+
+  /**
+   * Name of the environment variable used to infer the current scope.
+   * Defaults to "SCOPE".
+   *
+   * Example:
+   *   scopeEnvVarName = "SCOPE"
+   *   process.env.SCOPE = "qa" → uses ./config/config.qa
+   */
+  scopeEnvVarName?: string;
 
   /**
    * If true, throws if a key is missing and no default is provided.
@@ -33,7 +44,12 @@ export interface ConfigManagerOptions {
 export interface GetOptions<T> {
   /**
    * Scope to use (e.g. "dev", "prod").
-   * If omitted, defaultScope is used.
+   *
+   * Resolution order when calling a getter:
+   *   1. options.scope
+   *   2. override set via config.load(...)
+   *   3. process.env[scopeEnvVarName]
+   *   4. defaultScope
    */
   scope?: string;
 
