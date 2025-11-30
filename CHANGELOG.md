@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0](https://github.com/UlisesNiSchreiner/config-manager-js/compare/v0.0.3-rc.0...v2.0.0) (2025-11-30)
+
+### Features
+
+- add contributing - 01 ([b01c81d](https://github.com/UlisesNiSchreiner/config-manager-js/commit/b01c81d90c177151f8a08cff9bccf3649b4f7001))
+- release 0.0.3 - 01 ([7351393](https://github.com/UlisesNiSchreiner/config-manager-js/commit/73513939b07d61c79f3d77adec4b6624126c1d45))
+- release 1.0.0 - 01 ([73207e7](https://github.com/UlisesNiSchreiner/config-manager-js/commit/73207e7294990a3b777b9a3f805b148c8761c9fc))
+
 ### [0.0.3-rc.0](https://github.com/UlisesNiSchreiner/config-manager-js/compare/v0.0.1-rc.1...v0.0.3-rc.0) (2025-11-30)
 
 ### Features
