@@ -1,4 +1,4 @@
-# properties-manager-js
+# config-manager-js
 
 A lightweight **configuration manager for JS
 Designed to handle **scoped configuration files\*\*, environment overrides
@@ -27,7 +27,7 @@ enforcing structure, validation and consistency across environments.
 ## 🚀 Installation
 
 ```bash
-npm install properties-manager-js
+npm install config-manager-js
 ```
 
 ---
@@ -50,7 +50,7 @@ If **no `SCOPE` environment variable is set** and you **don't call
     ./config/config.dev
 
 ```ts
-import { config } from "properties-manager-js";
+import { config } from "config-manager-js";
 
 const port = config.getNumber("PORT");
 const mode = config.getString("MODE");

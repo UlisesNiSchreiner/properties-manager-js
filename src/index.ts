@@ -6,7 +6,7 @@ export * from "./types";
  * Default singleton instance.
  *
  * Usage:
- *   import { config } from "properties-manager-js";
+ *   import { config } from "config-manager-js";
  *   const port = config.getNumber("PORT");
  */
 export const config = ConfigManager.getInstance();

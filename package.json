@@ -1,7 +1,7 @@
 {
-  "name": "properties-manager-js",
-  "version": "0.0.1-rc.1",
-  "description": "properties-manager-js - auto-generated from template",
+  "name": "config-manager-js",
+  "version": "1.0.0",
+  "description": "config-manager-js - auto-generated from template",
   "author": "Ulises Schreiner",
   "license": "MIT",
   "type": "module",
