@@ -292,8 +292,6 @@ When contributing, please keep these principles in mind:
 
 ---
 
----
-
 ## 📄 License
 
 MIT © Ulises Schreiner
