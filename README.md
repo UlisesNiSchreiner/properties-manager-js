@@ -176,6 +176,124 @@ npm run test
 
 ---
 
+# Contributing to config-manager-js
+
+Thank you for your interest in contributing to **config-manager-js**.
+Contributions are welcome and encouraged. This project follows a
+**feature-based workflow** designed to keep `master` always stable and
+production-ready.
+
+---
+
+## ✅ Development Workflow
+
+All changes must go through a **Pull Request**. Direct pushes to
+`master` are not allowed.
+
+### 1. Fork & Clone
+
+```bash
+git clone https://github.com/UlisesNiSchreiner/config-manager-js.git
+cd config-manager-js
+npm install
+```
+
+---
+
+### 2. Create a Feature Branch
+
+All work must be done from a `feature/*` branch:
+
+```bash
+git checkout -b feature/my-feature
+```
+
+Branch naming convention:
+
+    feature/<short-descriptive-name>
+
+Examples: - `feature/add-yaml-support` -
+`feature/improve-scope-resolution` - `feature/performance-optimizations`
+
+---
+
+### 3. Development Standards
+
+Before opening a PR, make sure all checks pass:
+
+```bash
+npm run lint
+npm run typecheck
+npm run test:coverage
+npm run build
+```
+
+This project enforces:
+
+- ESLint + Prettier
+- Full TypeScript type safety
+- High test coverage (Vitest)
+- Conventional Commits
+
+---
+
+### 4. Commit Convention
+
+Commits must follow **Conventional Commits**:
+
+```bash
+feat: add support for custom scope resolution
+fix: prevent cache leak on scope switch
+docs: update usage examples
+chore: update dependencies
+```
+
+Husky + commitlint will block invalid commits automatically.
+
+---
+
+### 5. Open a Pull Request
+
+Push your branch and open a PR targeting `master`:
+
+```bash
+git push origin feature/my-feature
+```
+
+In the Pull Request:
+
+- Clearly describe **what was changed**
+- Explain **why the change is needed**
+- Reference related issues if applicable
+
+All Pull Requests require **at least one approval** before being merged.
+
+---
+
+### 6. After Merge
+
+Once merged into `master`, the change will be included in the next
+release cycle according to the LibFlow process:
+
+- Regular changes → included in the next `release/x.y` branch
+- Urgent fixes → can be promoted via `hotfix/*`
+
+---
+
+## 🧠 Design Principles for Contributions
+
+When contributing, please keep these principles in mind:
+
+- Predictable configuration resolution
+- Zero side effects between scopes
+- Strong typing with explicit behavior
+- No silent fallbacks unless explicitly defined
+- Performance and memory safety first
+
+---
+
+---
+
 ## 📄 License
 
 MIT © Ulises Schreiner
